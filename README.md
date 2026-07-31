@@ -21,7 +21,7 @@
 
 - 🔧 Tool Calling
   - 自动天气查询
-  - 数据库查询（可扩展）
+  - 数据库查询
   - RAG 检索（可扩展）
   - Web Search（可扩展）
 
@@ -276,10 +276,10 @@ file=audio.wav
 
 ```json
 {
-    "filename":"demo.wav",
-    "transcription":"你好",
-    "ai_reply":"你好，请问有什么可以帮助你？",
-    "wav_url":"http://127.0.0.1:8081/audios/xxxx.wav"
+  "filename": "Test.m4a",
+  "transcription": "明天天气怎么样",
+  "ai_reply": "明天济南天气晴朗，气温25°C，湿度60%。",
+  "wav_url": "http://127.0.0.1:8081/static/audios/xxxxxxx.wav"
 }
 ```
 
@@ -308,10 +308,10 @@ POST /transcribe/
 当前支持：
 
 - Weather Query
+- Database Query
 
 未来可扩展：
 
-- Database Query
 - RAG Retrieval
 - Web Search
 - Calendar
