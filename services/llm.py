@@ -240,48 +240,70 @@ async def text_to_ai_with_tools(
             if not isinstance(message.tool_calls, list) or len(message.tool_calls) == 0:
                 logger.error("❌ 模型请求调用工具：tool_calls格式异常")
                 return None
-            logger.info(f"🛠️  模型请求调用的所有工具：{message.tool_calls}")
-            tool_call = message.tool_calls[0]
 
-            if (
-                tool_call is None
-                or not hasattr(tool_call, "function")
-                or tool_call.function is None
-            ):
-                logger.error("❌ 模型请求调用工具：工具调用结构异常")
-                return None
-            tool_name = tool_call.function.name
-
-            try:
-                arguments = json.loads(tool_call.function.arguments)
-            except json.JSONDecodeError as e:
-                logger.error(f"❌ 模型请求调用工具：工具参数JSON解析失败:{e}")
-                return None
             logger.info(
-                f"🛠️  模型请求调用工具：调用工具: {tool_name}, 参数:{arguments}"
+                f"🛠️  模型请求调用的工具数量: {len(message.tool_calls)} 工具名称：{ [tool.function.name for tool in message.tool_calls] }"
             )
 
-            # ==================================================
-            # 执行工具：使用 TOOL_ROUTER 统一分发工具，避免 if...elif...
-            # ==================================================
-            tool_func = TOOL_ROUTER.get(tool_name)
-            if tool_func is None:
-                logger.error(f"❌ 未注册的工具: {tool_name}")
-                tool_result = {"success": False, "error": f"未知工具: {tool_name}"}
-            else:
-                try:
-                    tool_result = await tool_func(**arguments)
-                except Exception as e:
-                    logger.exception(f"❌ 工具 {tool_name} 执行失败")
-                    tool_result = {"success": False, "error": str(e)}
-            # ==================================================
-            # 修改：统一校验工具返回值
-            # ==================================================
-            if tool_result is None:
-                logger.error("❌ 工具执行返回为空")
-                tool_result = {"success": False, "error": "工具执行失败"}
+            messages = [
+                {
+                    "role": "system",
+                    "content": "你是一个语音助手，请根据工具结果回答用户。请直接回答用户，不输出思考过程。",
+                },
+                {"role": "user", "content": question},
+                message,
+            ]
 
-            logger.info(f"🛠️  工具执行完成: {tool_name}, 返回: {tool_result}")
+            # tool_call = message.tool_calls[0]
+            for tool_call in message.tool_calls:
+                if (
+                    tool_call is None
+                    or not hasattr(tool_call, "function")
+                    or tool_call.function is None
+                ):
+                    logger.error("❌ 模型请求调用工具：工具调用结构异常")
+                    return None
+                tool_name = tool_call.function.name
+
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ 模型请求调用工具：工具参数JSON解析失败:{e}")
+                    return None
+                except Exception as e:
+                    logger.error(f"❌ 模型请求调用工具：工具参数解析失败:{e}")
+                    return None
+                logger.info(f"🛠️  模型正在调用工具: {tool_name}, 参数:{arguments}")
+
+                # ==================================================
+                # 执行工具：使用 TOOL_ROUTER 统一分发工具，避免 if...elif...
+                # ==================================================
+                tool_func = TOOL_ROUTER.get(tool_name)
+                if tool_func is None:
+                    logger.error(f"❌ 未注册的工具: {tool_name}")
+                    tool_result = {"success": False, "error": f"未知工具: {tool_name}"}
+                else:
+                    try:
+                        tool_result = await tool_func(**arguments)
+                    except Exception as e:
+                        logger.exception(f"❌ 工具 {tool_name} 执行失败")
+                        tool_result = {"success": False, "error": str(e)}
+                # ==================================================
+                # 修改：统一校验工具返回值
+                # ==================================================
+                if tool_result is None:
+                    logger.error("❌ 工具执行返回为空")
+                    tool_result = {"success": False, "error": "工具执行失败"}
+
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(tool_result, ensure_ascii=False),
+                    }
+                )
+
+                logger.info(f"🛠️  工具执行完成: {tool_name}, 返回: {tool_result}")
 
             # ==================================
             # 第二次LLM调用
@@ -289,20 +311,7 @@ async def text_to_ai_with_tools(
             # ==================================
             second_response = await llm_client.chat.completions.create(
                 model=LLM_MODEL_NAME,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "你是一个语音助手，请根据工具结果回答用户。请直接回答用户，不输出思考过程。",
-                    },
-                    {"role": "user", "content": question},
-                    message,
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(tool_result, ensure_ascii=False),
-                    },
-                ],
-                tools=TOOLS,
+                messages=messages,
                 temperature=0.7,
                 max_tokens=512,
                 stream=False,

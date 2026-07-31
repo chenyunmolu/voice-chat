@@ -148,12 +148,26 @@ http://127.0.0.1:8001
 Fun-ASR-Nano-2512
 ```
 
+启动示例：
+
+```bash
+vllm serve /root/autodl-tmp/Fun-ASR-Nano-2512-vllm \
+    --gpu-memory-utilization 0.2 \
+    --trust-remote-code \
+    --port 8001
+```
 ---
 
 ## LLM
 
 ```
 http://127.0.0.1:8002
+```
+
+例如：
+
+```
+Qwen3.5-4B
 ```
 
 启动示例：
@@ -163,7 +177,7 @@ vllm serve /root/autodl-tmp/Qwen3.5-4B \
     --gpu-memory-utilization 0.5 \
     --max-model-len 32768 \
     --enable-auto-tool-choice \
-    --tool-call-parser hermes \
+    --tool-call-parser qwen3_xml \
     --port 8002
 ```
 
@@ -178,7 +192,17 @@ http://127.0.0.1:8003
 例如：
 
 ```
-Qwen3-TTS
+Qwen3-TTS-12Hz-0.6B-CustomVoice
+```
+
+启动示例：
+
+```bash
+vllm serve /root/autodl-tmp/Qwen3-TTS-12Hz-0.6B-CustomVoice \
+    --gpu-memory-utilization 0.2 \
+    --trust-remote-code \
+    --enforce-eager \
+    --port 8003
 ```
 
 ---

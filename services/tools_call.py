@@ -10,7 +10,7 @@ async def get_weather(city: str):
     """
     try:
         # 模拟异步请求天气API
-        await asyncio.sleep(1)
+        # await asyncio.sleep(1)
         # 示例数据
         return {
             "success": True,
@@ -52,7 +52,7 @@ async def query_database(user_id: str):
     """
     try:
         # 模拟异步请求数据库API
-        await asyncio.sleep(1)
+        # await asyncio.sleep(1)
         # 示例数据
         return {
             "success": True,
