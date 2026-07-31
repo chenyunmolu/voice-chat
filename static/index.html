@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Voice LLM Assistant</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: #07111f;
+            color: #fff;
+            overflow-x: hidden
+        }
+
+        #bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 20px
+        }
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 30px;
+            background: #4f8cff;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 20px #4f8cff
+        }
+
+        .pipe,
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            padding: 20px
+        }
+
+        .pipe div,
+        .card {
+            background: rgba(255, 255, 255, .08);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            border-radius: 16px;
+            transition: .3s
+        }
+
+        .card:hover,
+        .pipe div:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 0 20px cyan
+        }
+
+        .chat {
+            max-width: 700px;
+            margin: auto;
+            background: rgba(255, 255, 255, .08);
+            padding: 20px;
+            border-radius: 16px
+        }
+
+        section {
+            padding: 40px 20px
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #9bb
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bg"></canvas>
+    <header class="hero">
+        <h1>🎤 Voice LLM Assistant</h1>
+        <p>实时语音输入 · LLM 推理 · 语音输出</p>
+        <button id="demoBtn">Start Demo</button>
+    </header>
+    <section>
+        <h2>Pipeline</h2>
+        <div class="pipe">
+            <div>🎤 Mic</div>
+            <span>→</span>
+            <div>VAD</div>
+            <span>→</span>
+            <div>FunASR</div>
+            <span>→</span>
+            <div>Qwen3</div>
+            <span>→</span>
+            <div>Qwen3-TTS</div>
+            <span>→</span>
+            <div>🔊</div>
+        </div>
+    </section>
+    <section>
+        <h2>Streaming Demo</h2>
+        <div class="chat">
+            <div class="user">👤 你好，介绍一下自己。</div>
+            <div class="bot" id="typing"></div>
+        </div>
+    </section>
+    <section>
+        <h2>Features</h2>
+        <div class="grid">
+            <div class="card">Streaming ASR</div>
+            <div class="card">LLM</div>
+            <div class="card">RAG</div>
+            <div class="card">Tool Calling</div>
+            <div class="card">WebRTC</div>
+            <div class="card">vLLM</div>
+            <div class="card">TTS</div>
+            <div class="card">Memory</div>
+        </div>
+    </section>
+    <footer>Powered by FastAPI · FunASR · Qwen3 · Qwen3-TTS</footer>
+    <script>
+        const txt = "🤖 我是一个支持 ASR、LLM、TTS 的实时语音助手，可以结合 Agent、RAG 与 Tool Calling 完成复杂任务。";
+        let i = 0;
+
+        function t() {
+            if (i < txt.length) {
+                typing.textContent += txt[i++];
+                setTimeout(t, 40)
+            }
+        }
+
+        t();
+        demoBtn.onclick = () => alert("这里可接入 WebRTC + FunASR + Qwen3 + Qwen3-TTS");
+        const c = document.getElementById("bg"), x = c.getContext("2d");
+
+        function r() {
+            c.width = innerWidth;
+            c.height = innerHeight
+        }
+
+        onresize = r;
+        r();
+        let p = [...Array(120)].map(() => ({
+            x: Math.random() * c.width,
+            y: Math.random() * c.height,
+            v: 1 + Math.random() * 2
+        }));
+
+        function a() {
+            x.fillStyle = "#07111f";
+            x.fillRect(0, 0, c.width, c.height);
+            x.fillStyle = "#6cf";
+            for (let s of p) {
+                x.beginPath();
+                x.arc(s.x, s.y, 1.5, 0, 7);
+                x.fill();
+                s.y += s.v;
+                if (s.y > c.height) {
+                    s.y = 0;
+                    s.x = Math.random() * c.width
+                }
+            }
+            requestAnimationFrame(a)
+        }
+
+        a();
+    </script>
+</body>
+
+</html>
