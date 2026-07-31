@@ -199,6 +199,7 @@ Qwen3-TTS-12Hz-0.6B-CustomVoice
 
 ```bash
 vllm serve /root/autodl-tmp/Qwen3-TTS-12Hz-0.6B-CustomVoice \
+    --omni \ 
     --gpu-memory-utilization 0.2 \
     --trust-remote-code \
     --enforce-eager \
