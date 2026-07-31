@@ -10,7 +10,7 @@ from openai import (
     RateLimitError,
     Timeout,
 )
-from .tools_call import TOOLS, get_weather
+from .tools_call import TOOLS, get_weather, TOOL_ROUTER
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -240,7 +240,7 @@ async def text_to_ai_with_tools(
             if not isinstance(message.tool_calls, list) or len(message.tool_calls) == 0:
                 logger.error("❌ 模型请求调用工具：tool_calls格式异常")
                 return None
-
+            logger.info(f"🛠️  模型请求调用的所有工具：{message.tool_calls}")
             tool_call = message.tool_calls[0]
 
             if (
@@ -261,15 +261,27 @@ async def text_to_ai_with_tools(
                 f"🛠️  模型请求调用工具：调用工具: {tool_name}, 参数:{arguments}"
             )
 
-            # 执行工具
-            if tool_name == "get_weather":
-                tool_result = await get_weather(arguments["city"])
+            # ==================================================
+            # 执行工具：使用 TOOL_ROUTER 统一分发工具，避免 if...elif...
+            # ==================================================
+            tool_func = TOOL_ROUTER.get(tool_name)
+            if tool_func is None:
+                logger.error(f"❌ 未注册的工具: {tool_name}")
+                tool_result = {"success": False, "error": f"未知工具: {tool_name}"}
             else:
-                tool_result = {"error": "未知工具"}
-
+                try:
+                    tool_result = await tool_func(**arguments)
+                except Exception as e:
+                    logger.exception(f"❌ 工具 {tool_name} 执行失败")
+                    tool_result = {"success": False, "error": str(e)}
+            # ==================================================
+            # 修改：统一校验工具返回值
+            # ==================================================
             if tool_result is None:
-                logger.error("❌ 模型请求调用工具：工具执行返回为空")
-                tool_result = {"error": "工具执行失败"}
+                logger.error("❌ 工具执行返回为空")
+                tool_result = {"success": False, "error": "工具执行失败"}
+
+            logger.info(f"🛠️  工具执行完成: {tool_name}, 返回: {tool_result}")
 
             # ==================================
             # 第二次LLM调用
